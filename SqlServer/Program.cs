@@ -4,36 +4,43 @@ using SqlServer.DataBase;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 #region DbConnection
-builder.Services.AddDbContext<ApplicationDbContext>(options=>
-options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 #endregion
 
 #region CORS
-builder.Services.AddCors(options => 
+builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowVite", x => x.WithOrigins("http://localhost:5173").AllowAnyHeader().AllowAnyMethod());
+    options.AddPolicy("AllowAll", x =>
+        x.AllowAnyOrigin()
+         .AllowAnyHeader()
+         .AllowAnyMethod());
 });
 #endregion
-builder.Services.AddControllers();
 
+builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<OtpBussiness>();
+
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+/// ? IMPORTANT: Swagger enable in Production (Render)
+app.UseSwagger();
+app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
-app.UseCors("AllowVite");
+/// ? IMPORTANT: Render PORT binding
+var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
+app.Urls.Add($"http://*:{port}");
+
+app.UseCors("AllowAll");
+
+/// ? Disable HTTPS redirect (Render already handles HTTPS)
+/// app.UseHttpsRedirection();
+
 app.UseAuthorization();
 
 app.MapControllers();
 
 app.Run();
-
